@@ -29,12 +29,13 @@ def retrieve():
         print(video_id)
 
 ############################################
+# USING FFMPEG INSTEAD?
 
 def saving(video_id):
     Save_To = "/Users/elija/Desktop/Projects/Music/Music/MP3"
     link = f"https://www.youtube.com/watch?v={video_id}"
 
-    yt = YouTube(f"https://www.youtube.com/watch?v={video_id}")
+    yt = YouTube(link)
 
     mp3 = yt.streams.filter(file_extension="mp3").all()
 
