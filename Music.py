@@ -36,6 +36,7 @@ def saving(video_id):
     link = f"https://www.youtube.com/watch?v={video_id}"
 
     yt = YouTube(link)
+    yt = YouTube(link, use_oauth=True, allow_oauth_cache=True)
 
     mp3 = yt.streams.filter(file_extension="mp3").all()
 
