@@ -1,13 +1,16 @@
 # test link: https://www.youtube.com/watch?v=zLrOS5oz6IQ
 # streaming playlist: https://www.youtube.com/playlist?list=PLRvGeqCR1PHVpTBpuVQhd2oixW4FXi56z
 
-from pytube import YouTube
+from pytubefix import YouTube
+from pytubefix.exceptions import VideoUnavailable
+import os
 from googleapiclient.discovery import build
 import googleapiclient 
 
 """Api Connection"""
 api_version = "v3"
 api_service_name = "youtube"
+api_key = "AIzaSyC4LwYBzN1iIAP_Y2lnQfJMtIXTY0CUT2g"
 
 youtube_connection = googleapiclient.discovery.build(api_service_name, api_version, developerKey=api_key)
 
@@ -20,29 +23,33 @@ response = request.execute() # response from the request
 
 """Retrieves video ID"""
 def retrieve():
-    id = []
     for item in response['items']:
-        id.append(response)
         video_id = item['contentDetails']['videoId']
         saving(video_id)
         
         print(video_id)
 
-############################################
-# USING FFMPEG INSTEAD?
-
+########################################
 def saving(video_id):
-    Save_To = "/Users/elija/Desktop/Projects/Music/Music/MP3"
+    Save_To = "MP3"
     link = f"https://www.youtube.com/watch?v={video_id}"
 
-    yt = YouTube(link)
-    yt = YouTube(link, use_oauth=True, allow_oauth_cache=True)
+    # yt = YouTube(link, use_oauth=True, allow_oauth_cache=True)
 
-    mp3 = yt.streams.filter(file_extension="mp3").all()
-
+    # yt.streams.filter(file_extension="mp3")
+    
     try:
-        mp3.download(output_path=Save_To)
+        yt = YouTube(link, use_oauth=True, allow_oauth_cache=True)
     except:
-        print("error")
+        print(f"Video {link} is unavaiable")
+        pass
+    else:
+        print("Downloading . . .")
+        Download_File = yt.streams.first().download(output_path=Save_To)
+        base, extension = os.path.splitext(Download_File)
+        mp3 = base + ".mp3"
+        os.rename(Download_File, mp3)
 
 retrieve()
+
+# File already exists error
