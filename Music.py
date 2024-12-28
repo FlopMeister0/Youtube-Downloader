@@ -40,7 +40,7 @@ def saving(video_id):
     
     try:
         yt = YouTube(link, use_oauth=True, allow_oauth_cache=True)
-    except:
+    except VideoUnavailable:
         print(f"Video {link} is unavaiable")
         pass
     else:
