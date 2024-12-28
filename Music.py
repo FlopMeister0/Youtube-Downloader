@@ -7,24 +7,24 @@ from pytubefix.exceptions import VideoUnavailable
 import urllib.request
 import os
 
-"""Retrieves MP3"""
-class ConvertMP3():
+"""Retrieves Audio"""
+class GetAudio():
     # if the user wants a thumbnail to be downloaded also
-    thumbnail_flag = False
+    thumbnail_flag = True
     # playlist url
-    Playlist_url = "https://www.youtube.com/playlist?list=PLRvGeqCR1PHVpTBpuVQhd2oixW4FXi56z"
+    Playlist_url = input(str("Enter URL: "))
     # where it will be saved
-    Save_To = "MP3"
+    Save_To = "Audio"
     
-    """Downloads MP3"""
-    def DownloadMP3(Playlist_url, Save_To, thumbnail_flag):
+    """Downloads Audio"""
+    def DownloadAudio(Playlist_url, Save_To, thumbnail_flag):
         
         """Downloads thumbnail for MP3"""
-        def DownloadThumbnailMP3(base, url):
+        def DownloadThumbnail(base, url):
             thumbnail_url = yt.thumbnail_url # fetches url
             urllib.request.urlretrieve(thumbnail_url, f"{base}.jpg") # downloads from thumbnail url and names it the string of the file + .jpg without the extension.
         
-        """Continuation of MP3 function"""
+        """Continuation of Audio function"""
         p = Playlist(Playlist_url) # recognises the playlist
         for url in p.video_urls: # for each url in the playlist videos
             try:
@@ -32,24 +32,25 @@ class ConvertMP3():
             except VideoUnavailable:
                 print("Video Unavailable")
                 pass
+            except FileExistsError:
+                print("File already Exists")
+                pass
             else: # if there are no errors
                 Download_File = yt.streams.filter(only_audio=True).first().download(output_path=Save_To) # downloades only the audio and outputs to mp3
                 base, extension = os.path.splitext(Download_File) # splits filename from it's extension
-                mp3 = base + ".mp3" # replaces extension with .mp3
-                os.rename(Download_File, mp3) 
-                
-                print(base)
+
+                print(f"\nsuccessfully downloaded: {yt.title}")
                 
                 if thumbnail_flag == True: # if the flag is set to true
-                    DownloadThumbnailMP3(base, url)
+                    DownloadThumbnail(base, url)
         
-    DownloadMP3(Playlist_url, Save_To, thumbnail_flag)
+    DownloadAudio(Playlist_url, Save_To, thumbnail_flag)
             
-"""Retrieves MP4"""
-def MP4():
+"""Retrieves Original Video"""
+def Original():
     Playlist_url = "https://youtube.com/playlist?list=PLRvGeqCR1PHXu9gwYaYEU60s1sDuCe712&si=-5dnVHX5oledQjai"
     p = Playlist(Playlist_url)
-    Save_To = "MP4"
+    Save_To = "Video"
     
     for url in p.video_urls:
         try:
@@ -60,6 +61,9 @@ def MP4():
         else:
             Download_File = yt.streams.first().download(output_path=Save_To)
             print(Download_File)
-            
-if __name__ == "__main__":
-    print("running")
+
+"""Rums programme"""
+__name__ == "__main__"
+
+# if __name__ == "__main__":
+#     print("more options")
