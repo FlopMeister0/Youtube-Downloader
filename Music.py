@@ -20,36 +20,3 @@ request = youtube_connection.playlistItems().list(
    playlistId = "PLRvGeqCR1PHVpTBpuVQhd2oixW4FXi56z"
 )
 response = request.execute() # response from the request
-
-"""Retrieves video ID"""
-def retrieve():
-    for item in response['items']:
-        video_id = item['contentDetails']['videoId']
-        saving(video_id)
-        
-        print(video_id)
-
-########################################
-def saving(video_id):
-    Save_To = "MP3"
-    link = f"https://www.youtube.com/watch?v={video_id}"
-
-    # yt = YouTube(link, use_oauth=True, allow_oauth_cache=True)
-
-    # yt.streams.filter(file_extension="mp3")
-    
-    try:
-        yt = YouTube(link, use_oauth=True, allow_oauth_cache=True)
-    except VideoUnavailable:
-        print(f"Video {link} is unavaiable")
-        pass
-    else:
-        print("Downloading . . .")
-        Download_File = yt.streams.first().download(output_path=Save_To)
-        base, extension = os.path.splitext(Download_File)
-        mp3 = base + ".mp3"
-        os.rename(Download_File, mp3)
-
-retrieve()
-
-# File already exists error
