@@ -1,6 +1,7 @@
 # test link: https://www.youtube.com/watch?v=zLrOS5oz6IQ
 # streaming playlist: https://www.youtube.com/playlist?list=PLRvGeqCR1PHVpTBpuVQhd2oixW4FXi56z
 # It's Bangers and mash time: https://youtube.com/playlist?list=PLRvGeqCR1PHXu9gwYaYEU60s1sDuCe712&si=-5dnVHX5oledQjai
+# To Download: https://www.youtube.com/playlist?list=PLRvGeqCR1PHWFPErPnhV9rbWIWy_MOtVr
 
 from pytubefix import YouTube, Playlist
 from pytubefix.exceptions import VideoUnavailable
