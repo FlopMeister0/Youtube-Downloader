@@ -7,6 +7,8 @@ from pytubefix import YouTube, Playlist
 from pytubefix.exceptions import VideoUnavailable
 import urllib.request
 import os
+import PyQt5 as py
+import site
 
 """Retrieves Audio"""
 class GetAudio():
