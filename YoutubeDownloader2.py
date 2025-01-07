@@ -44,7 +44,7 @@ class Downloader(QThread):
                     yt = YouTube(url)
                     self.status.emit(f"Downloading: {yt.title}")
 
-                    download_file = yt.streams.filter(only_audio=True).first().download()
+                    download_file = yt.streams.filter(only_audio=True).first().download(output_path=self.save_to)
                     base, _ = os.path.splitext(download_file)
 
                     if self.thumbnail_flag:
@@ -235,6 +235,8 @@ class Ui_YoutubeDownloader(object):
 
 
     def Convert(self):
+        self.progressBar.setValue(0)
+        self.statusbar.showMessage("")
         """Start the download process"""
         if self.downloader and self.downloader.isRunning():
          self.downloader.stop()
