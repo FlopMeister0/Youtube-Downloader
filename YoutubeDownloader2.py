@@ -41,9 +41,38 @@ class Downloader(QThread):
                     break
 
                 try:
-                    yt = Youtube() # Fix this
+                    yt = YouTube(url)
+                    self.status.emit(f"Downloading: {yt.title}")
 
-                
+                    download_file = yt.streams.filter(only_audio=True).first().download()
+                    base, _ = os.path.splitext(download_file)
+
+                    if self.thumbnail_flag:
+                        self.download_thumbnail(yt,base)
+
+                    progress = int((i + 1) / total_videos * 100)
+                    self.progress.emit(progress)
+
+                except VideoUnavailable:
+                    self.status.emit(f"Video Unavailable: {url}")
+                    continue
+                except Exception as e:
+                    self.status.emit(f"Error Downloading {url}: {str(e)}")
+                    continue
+
+        except Exception as e:
+            self.error.emit(f"Playlist error: {str(e)}")
+
+    def download_thumbnail(self,yt,base):
+        try:
+            thumbnail_url = yt.thumbnail_url
+            urllib.request.urlretrieve(thumbnail_url, f"{base},jpg")
+        except Exception as e:
+            self.status.emit(f"Thumbnail download failed: {str(e)}")
+    
+    def stop(self):
+        self.is_running = False
+
 
 class Ui_YoutubeDownloader(object):
     def setupUi(self, YoutubeDownloader):
@@ -179,6 +208,11 @@ class Ui_YoutubeDownloader(object):
         self.retranslateUi(YoutubeDownloader)
         QtCore.QMetaObject.connectSlotsByName(YoutubeDownloader)
 
+        "intialising the downloader"
+        self.downloader = None
+        self.progressBar.setValue(0)
+
+
     def retranslateUi(self, YoutubeDownloader):
         _translate = QtCore.QCoreApplication.translate
         YoutubeDownloader.setWindowTitle(_translate("YoutubeDownloader", "MainWindow"))
@@ -199,109 +233,71 @@ class Ui_YoutubeDownloader(object):
         self.checkBoxThumbnail.setText(_translate("YoutubeDownloader", "Download Thumbnail Aswell"))
         self.checkBoxPlaylist.setText(_translate("YoutubeDownloader", "Check for Playlist / Uncheck for Video"))
 
+
     def Convert(self):
-        """Functions"""
-        # if the user wants a thumbnail to be downloaded also
+        """Start the download process"""
+        if self.downloader and self.downloader.isRunning():
+         self.downloader.stop()
+         self.downloader.wait()
+         self.pushButtonConvert.setText("Convert")
+         return
+
         thumbnail_flag = self.checkBoxThumbnail.isChecked()
-        # playlist url
-        Link = self.textEditLink.toPlainText()
-        # where it will be saved
+        link = self.textEditLink.toPlainText()
+        save_to = self.textEditDirectDownloads.toPlainText()
 
-        Save_To = self.textEditDirectDownloads.toPlainText()
-        if not Save_To:
-            if Save_To == "" and self.radioButtonAudio.isChecked() and self.checkBoxPlaylist.isChecked():
-                Save_To = "Audio"
-                DownloadAudioPlaylist(Link, Save_To,thumbnail_flag)
-
-            elif Save_To == "" and self.radioButtonVideo.isChecked():
-                Save_To = "Video"
-                # DownloadVideo(thumbnail_flag, Link, Save_To)
-            elif Save_To == "" and self.radioButtonVideoAndAudio.isChecked():
-                Save_To = "Original"
-
-        if not os.path.isdir(Save_To):
-            self.textEditDirectDownloads.setText("invalid directory!")
-
-
-"""Downloads Audio"""
-def DownloadAudioPlaylist(Playlist_url, Save_To, thumbnail_flag):
-    
-    print("Download")
-
-    """Downloads thumbnail for MP3"""
-    def DownloadThumbnail(base, url):
-        thumbnail_url = yt.thumbnail_url # fetches url
-        urllib.request.urlretrieve(thumbnail_url, f"{base}.jpg") # downloads from thumbnail url and names it the string of the file + .jpg without the extension.
-    
-    """Continuation of Audio function"""
-    p = Playlist(Playlist_url) # recognises the playlist
-    for url in p.video_urls: # for each url in the playlist videos
-        try:
-            yt = YouTube(url, use_oauth=True, allow_oauth_cache=True)  # fetches the youtube video
-        except VideoUnavailable:
-            print("Video Unavailable")
-            pass
-        except FileExistsError:
-            print("File already Exists")
-            pass
-        else: # if there are no errors
-            Download_File = yt.streams.filter(only_audio=True).first().download(output_path=Save_To) # downloades only the audio and outputs to mp3
-            base, extension = os.path.splitext(Download_File) # splits filename from it's extension
-
-            print(f"\nsuccessfully downloaded: {yt.title}")
+        if not link:
+            self.statusbar.showMessage("Please enter a valid URL")
+            return
+        
+        if not save_to:
+            if self.radioButtonAudio.isChecked():
+                save_to = "Audio"
+            elif self.radioButtonVideo.isChecked():
+                save_to = "Video"
+            elif self.radioButtonVideoAndAudio.isChecked():
+                save_to = "Original"
             
-            if thumbnail_flag == True: # if the flag is set to true
-                DownloadThumbnail(base, url)
+        if not os.path.exists(save_to):
+            try:
+                os.makedirs(save_to)
+            except Exception as e:
+                self.statusbar.showMessage(f"Error creating directory: {str(e)}")
+                return
 
+        # determining the download type
+        if self.radioButtonAudio.isChecked() and self.checkBoxPlaylist.isChecked():
+            download_type = "audio_playlist"
+        elif self.radioButtonVideo.isChecked():
+            download_type = "video"
+        else:
+            download_type = "video_audio"
+        
+        # create and starting the download worker:
+        self.downloader = Downloader(link, save_to, download_type, thumbnail_flag)
+        self.downloader.progress.connect(self.update_progress)
+        self.downloader.error.connect(self.update_status)
+        self.downloader.error.connect(self.handle_error)
+        self.downloader.finished.connect(self.download_finished)
 
-
-
-
-# """Retrieves Original Video"""
-# def Original():
-#     Playlist_url = "https://youtube.com/playlist?list=PLRvGeqCR1PHXu9gwYaYEU60s1sDuCe712&si=-5dnVHX5oledQjai"
-#     p = Playlist(Playlist_url)
-#     Save_To = "Video"
+        self.pushButtonConvert.setText("Cancel")
+        self.downloader.start()
     
-#     for url in p.video_urls:
-#         try:
-#             yt = YouTube(url, use_oauth=True, allow_oauth_cache=True)
-#         except VideoUnavailable:
-#             print("Video Unavailable")
-#             pass
-#         else:
-#             Download_File = yt.streams.first().download(output_path=Save_To)
-#             print(Download_File)
+    def update_progress(self,value):
+        self.progressBar.setValue(value)
 
-# """Downloads Video Only"""
-# def DownloadVideo(Playlist_url, Save_To, thumbnail_flag):
+    def update_status(self, message):
+        self.statusbar.showMessage(message)
+        self.listDownloaded.addItem(message)
     
-#     print("Download")
+    def handle_error(self,error_message):
+        self.statusbar.showMessage(f"Error: {error_message}")
+        self.pushButtonConvert.setText("Convert")
 
-#     """Downloads thumbnail for MP3"""
-#     def DownloadThumbnail(base, url):
-#         thumbnail_url = yt.thumbnail_url # fetches url
-#         urllib.request.urlretrieve(thumbnail_url, f"{base}.jpg") # downloads from thumbnail url and names it the string of the file + .jpg without the extension.
-    
-#     """Continuation of Audio function"""
-#     p = Playlist(Playlist_url) # recognises the playlist
-#     for url in p.video_urls: # for each url in the playlist videos
-#         try:
-#             yt = YouTube(url, use_oauth=True, allow_oauth_cache=True)  # fetches the youtube video
-#         except VideoUnavailable:
-#             print("Video Unavailable")
-#             pass
-#         except FileExistsError:
-#             print("File already Exists")
-#             pass
-#         else: # if there are no errors
-#             Download_File = yt.streams.filter(only_audio=True).first().download(output_path=Save_To) # downloades only the audio and outputs to mp3
-#             base, extension = os.path.splitext(Download_File) # splits filename from it's extension
+    def download_finished(self):
+        self.pushButtonConvert.setText("Convert")
+        self.statusbar.showMessage("Download Completed!")
 
-#             print(f"\nsuccessfully downloaded: {yt.title}")
-            
-#             if thumbnail_flag == True: # if the flag is set to true
-#                 DownloadThumbnail(base, url)
 
 """Starts programme when run"""
 if __name__ == "__main__":
