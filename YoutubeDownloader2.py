@@ -15,12 +15,13 @@ class Downloader(QThread):
     error = pyqtSignal(str)
 
     # Properties for Downloads
-    def __init__(self,url,save_to,download_type, thumbnail_flag):
+    def __init__(self,url,save_to,download_type, thumbnail_flag, "author_flag"):
         super().__init__()
         self.url = url
         self.save_to = save_to
         self.download_type = download_type
         self.thumbnail_flag = thumbnail_flag
+        "self.author_flag = author_flag
         self.is_running = True
 
     # Determining what download type to run.
@@ -234,6 +235,10 @@ class Ui_YoutubeDownloader(object):
         self.textEditName = QtWidgets.QTextEdit(self.centralwidget)
         self.textEditName.setGeometry(QtCore.QRect(20, 80, 251, 31))
         self.textEditName.setObjectName("textEditName")
+        # Checkbox for Author
+        self.checkBoxAuthor = QtWidgets.QCheckBox(self.centralwidget)
+        self.checkBoxAuthor.setGeometry(QtCore.QRect(390, 160, 211, 17))
+        self.checkBoxAuthor.setObjectName("checkBoxAuthor")
         # Progress bar set to default
         self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
         self.progressBar.setGeometry(QtCore.QRect(20, 330, 361, 23))
@@ -284,7 +289,7 @@ class Ui_YoutubeDownloader(object):
         self.textEditDirectDownloads.setObjectName("textEditDirectDownloads")
         # Label to direct what the user inputs into TextEditDirectDownloads
         self.labelDirectDownloads = QtWidgets.QLabel(self.centralwidget)
-        self.labelDirectDownloads.setGeometry(QtCore.QRect(390, 160, 251, 41))
+        self.labelDirectDownloads.setGeometry(QtCore.QRect(390, 170, 251, 41))
         font = QtGui.QFont()
         font.setPointSize(10)
         font.setBold(True)
@@ -300,8 +305,8 @@ class Ui_YoutubeDownloader(object):
         self.iconYoutube = QtWidgets.QLabel(self.centralwidget)
         self.iconYoutube.setGeometry(QtCore.QRect(560, 30, 121, 81))
         iconYoutube = "YouTube.png"
-        Music_dir = os.path.dirname(__file__)
-        icon_youtube_file = os.path.join(Music_dir, "Icons")
+        Download_dir = os.path.dirname(__file__)
+        icon_youtube_file = os.path.join(Download_dir, "Icons")
         icon_youtube_file_path = os.path.join(icon_youtube_file, iconYoutube)
         self.iconYoutube.setText("")
         self.iconYoutube.setPixmap(QtGui.QPixmap(icon_youtube_file_path))
@@ -339,13 +344,9 @@ class Ui_YoutubeDownloader(object):
         self.line.setFrameShape(QtWidgets.QFrame.HLine)
         self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line.setObjectName("line")
-        # Button to confirm Direct Downloads selection.
-        self.pushButtonConfirm = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButtonConfirm.setGeometry(QtCore.QRect(390, 230, 141, 21))
-        self.pushButtonConfirm.setObjectName("pushButtonConfirm")
         # To restore default directory
         self.pushButtonDefault = QtWidgets.QPushButton(self.centralwidget, clicked = lambda: self.default())
-        self.pushButtonDefault.setGeometry(QtCore.QRect(530, 230, 151, 21))
+        self.pushButtonDefault.setGeometry(QtCore.QRect(390, 230, 291, 21))
         self.pushButtonDefault.setObjectName("pushButtonDefault")
         # Check box for the thumbnail downloads
         self.checkBoxThumbnail = QtWidgets.QCheckBox(self.centralwidget)
@@ -374,21 +375,21 @@ class Ui_YoutubeDownloader(object):
         _translate = QtCore.QCoreApplication.translate
         YoutubeDownloader.setWindowTitle(_translate("YoutubeDownloader", "YoutubeDownloader"))
         self.pushButtonConvert.setText(_translate("YoutubeDownloader", "Convert"))
-        self.pushButtonDelete.setText(_translate("YoutubeDownloader", "Delete Video"))
+        self.pushButtonDelete.setText(_translate("YoutubeDownloader", "Delete Selected Download"))
         self.radioButtonVideo.setText(_translate("YoutubeDownloader", "Video only"))
         self.radioButtonAudio.setText(_translate("YoutubeDownloader", "Audio only"))
         self.radioButtonVideoAndAudio.setText(_translate("YoutubeDownloader", "Video + Audio"))
         self.labelFormat.setText(_translate("YoutubeDownloader", "Format Settings"))
         self.labelLink.setText(_translate("YoutubeDownloader", "Input Link Here:"))
         self.labelExtra.setText(_translate("YoutubeDownloader", "Extra Settings"))
-        self.labelDirectDownloads.setText(_translate("YoutubeDownloader", "Where should the downloads go? (leave blank for application folder)"))
+        self.labelDirectDownloads.setText(_translate("YoutubeDownloader", "Optional Download Directory"))
         self.pushButtonSearch.setText(_translate("YoutubeDownloader", "Search"))
         self.labelPlaylistSelected.setText(_translate("YoutubeDownloader", "Playlist Selected:"))
         self.labelVideoSelected.setText(_translate("YoutubeDownloader", "Video Selected:"))
-        self.pushButtonConfirm.setText(_translate("YoutubeDownloader", "Confirm"))
-        self.pushButtonDefault.setText(_translate("YoutubeDownloader", "Default"))
+        self.pushButtonDefault.setText(_translate("YoutubeDownloader", "Set back to Default"))
         self.checkBoxThumbnail.setText(_translate("YoutubeDownloader", "Download Thumbnail Aswell"))
         self.checkBoxPlaylist.setText(_translate("YoutubeDownloader", "Check for Playlist / Uncheck for Video"))
+        self.checkBoxAuthor.setText(_translate("YoutubeDownloader", "Include Author in Filename"))
 
     """Searches for youtube video or playlist."""
     def Search(self):
