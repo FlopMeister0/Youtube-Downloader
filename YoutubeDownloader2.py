@@ -24,9 +24,20 @@ class Downloader(QThread):
         try:
             if self.download_type == "audio_playlist":
                 self.download_audio_playlist()
-            elif self.download_type == "video":
-                self.download_video()
-            # More download types as needed
+            elif self.download_type == "video_playlist":
+                self.download_video_playlist()
+            elif self.download_type == "audio_single":
+                self.download_audio_single()
+            elif self.download_type == "video_single":
+                self.download_video_single()
+            elif self.download_type == "video_audio_playlist":
+                self.download_video_audio_playlist()
+            elif self.download_type == "video_audio_single":
+                self.download_video_audio_single()
+            else:
+                self.status.emit("invalid download type")
+            
+            # More download types as needed here
             self.finished.emit()
         except Exception as e:
             self.error.emit(str(e))
@@ -62,11 +73,123 @@ class Downloader(QThread):
 
         except Exception as e:
             self.error.emit(f"Playlist error: {str(e)}")
+    
+    def download_video_playlist(self):
+        try:
+            p = Playlist(self.url)
+            total_videos = len(p.video_urls)
+        
+            for i, url in enumerate(p.video_urls):
+                if not self.is_running:
+                    break
+
+                try:
+                    yt = YouTube(url)
+                    self.status.emit(f"Downloading: {yt.title}")
+
+                    download_file = yt.streams.filter(only_video=True).first().download(output_path=self.save_to)
+                    base, _ = os.path.splitext(download_file)
+
+                    if self.thumbnail_flag:
+                        self.download_thumbnail(yt,base)
+
+                    progress = int((i + 1) / total_videos * 100)
+                    self.progress.emit(progress)
+
+                except VideoUnavailable:
+                    self.status.emit(f"Video Unavailable: {url}")
+                    continue
+                except Exception as e:
+                    self.status.emit(f"Error Downloading {url}: {str(e)}")
+                    continue
+
+        except Exception as e:
+            self.error.emit(f"Playlist error: {str(e)}")
+
+    def download_audio_single(self):
+        try:
+            yt = YouTube(self.url)
+            self.status.emit(f"downloading {yt.title}")
+            download_file = yt.streams.filter(only_audio=True).first().download(output_path=self.save_to)
+            base, _ = os.path.splitext(download_file)
+
+            if self.thumbnail_flag:
+                self.download_thumbnail(yt,base)
+            
+            self.progress.emit(100)
+        except VideoUnavailable:
+            self.status.emit(f"Video Unavailable: {self.url}")
+        except Exception as e:
+            self.status.emit(f"Error Downloading {self.url}: {str(e)}")
+    
+    def download_video_single(self):
+        try:
+            yt = YouTube(self.url)
+            self.status.emit(f"downloading {yt.title}")
+            download_file = yt.streams.filter(only_audio=True).first().download(output_path=self.save_to)
+            base, _ = os.path.splitext(download_file)
+
+            if self.thumbnail_flag:
+                self.download_thumbnail(yt,base)
+            
+            self.progress.emit(100)
+        except VideoUnavailable:
+            self.status.emit(f"Video Unavailable: {self.url}")
+        except Exception as e:
+            self.status.emit(f"Error Downloading {self.url}: {str(e)}")
+
+    def download_video_audio_playlist(self):
+        try:
+            p = Playlist(self.url)
+            total_videos = len(p.video_urls)
+        
+            for i, url in enumerate(p.video_urls):
+                if not self.is_running:
+                    break
+
+                try:
+                    yt = YouTube(url)
+                    self.status.emit(f"Downloading: {yt.title}")
+
+                    download_file = yt.streams.first().download(output_path=self.save_to)
+                    base, _ = os.path.splitext(download_file)
+
+                    if self.thumbnail_flag:
+                        self.download_thumbnail(yt,base)
+
+                    progress = int((i + 1) / total_videos * 100)
+                    self.progress.emit(progress)
+
+                except VideoUnavailable:
+                    self.status.emit(f"Video Unavailable: {url}")
+                    continue
+                except Exception as e:
+                    self.status.emit(f"Error Downloading {url}: {str(e)}")
+                    continue
+
+        except Exception as e:
+            self.error.emit(f"Playlist error: {str(e)}")
+
+    def download_video_audio_single(self):
+        try:
+            yt = YouTube(self.url)
+            self.status.emit(f"downloading {yt.title}")
+            download_file = yt.streams.first().download(output_path=self.save_to)
+            base, _ = os.path.splitext(download_file)
+
+            if self.thumbnail_flag:
+                self.download_thumbnail(yt,base)
+            
+            self.progress.emit(100)
+        except VideoUnavailable:
+            self.status.emit(f"Video Unavailable: {self.url}")
+        except Exception as e:
+            self.status.emit(f"Error Downloading {self.url}: {str(e)}")
 
     def download_thumbnail(self,yt,base):
         try:
             thumbnail_url = yt.thumbnail_url
-            urllib.request.urlretrieve(thumbnail_url, f"{base},jpg")
+            urllib.request.urlretrieve(thumbnail_url, f"{base}.jpg")
         except Exception as e:
             self.status.emit(f"Thumbnail download failed: {str(e)}")
     
@@ -134,7 +257,7 @@ class Ui_YoutubeDownloader(object):
         font.setWeight(75)
         self.labelExtra.setFont(font)
         self.labelExtra.setObjectName("labelExtra")
-        self.textEditDirectDownloads = QtWidgets.QTextEdit(self.centralwidget)
+        self.textEditDirectDownloads = QtWidgets.QTextEdit(self.centralwidget, clicked = lambda: self.default())
         self.textEditDirectDownloads.setGeometry(QtCore.QRect(390, 200, 291, 31))
         self.textEditDirectDownloads.setObjectName("textEditDirectDownloads")
         self.labelDirectDownloads = QtWidgets.QLabel(self.centralwidget)
@@ -270,10 +393,16 @@ class Ui_YoutubeDownloader(object):
         # determining the download type
         if self.radioButtonAudio.isChecked() and self.checkBoxPlaylist.isChecked():
             download_type = "audio_playlist"
+        elif self.radioButtonVideo.isChecked() and self.checkBoxPlaylist.isChecked():
+            download_type = "video_playlist"
+        elif self.radioButtonAudio.isChecked():
+            download_type = "audio_single"
         elif self.radioButtonVideo.isChecked():
-            download_type = "video"
+            download_type = "video_single"
+        elif self.checkBoxPlaylist.isChecked():
+            download_type = "video_audio_playlist"
         else:
-            download_type = "video_audio"
+            download_type = "video_audio_single"
         
         # create and starting the download worker:
         self.downloader = Downloader(link, save_to, download_type, thumbnail_flag)
@@ -299,6 +428,9 @@ class Ui_YoutubeDownloader(object):
     def download_finished(self):
         self.pushButtonConvert.setText("Convert")
         self.statusbar.showMessage("Download Completed!")
+    
+    def default(self):
+        self.textEditDirectDownloads.setText("")
 
 
 """Starts programme when run"""
