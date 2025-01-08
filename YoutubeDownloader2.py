@@ -2,8 +2,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QThread, pyqtSignal
 import sys
 import os
-from pytubefix import YouTube, Playlist
-from pytubefix.exceptions import VideoUnavailable
+from pytubefix import YouTube, Playlist, Search
+from pytubefix.exceptions import VideoUnavailable, RegexMatchError
 import urllib.request
 
 class Downloader(QThread):
@@ -257,7 +257,7 @@ class Ui_YoutubeDownloader(object):
         font.setWeight(75)
         self.labelExtra.setFont(font)
         self.labelExtra.setObjectName("labelExtra")
-        self.textEditDirectDownloads = QtWidgets.QTextEdit(self.centralwidget, clicked = lambda: self.default())
+        self.textEditDirectDownloads = QtWidgets.QTextEdit(self.centralwidget)
         self.textEditDirectDownloads.setGeometry(QtCore.QRect(390, 200, 291, 31))
         self.textEditDirectDownloads.setObjectName("textEditDirectDownloads")
         self.labelDirectDownloads = QtWidgets.QLabel(self.centralwidget)
@@ -269,7 +269,7 @@ class Ui_YoutubeDownloader(object):
         self.labelDirectDownloads.setFont(font)
         self.labelDirectDownloads.setWordWrap(True)
         self.labelDirectDownloads.setObjectName("labelDirectDownloads")
-        self.pushButtonSearch = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButtonSearch = QtWidgets.QPushButton(self.centralwidget, clicked = lambda: self.Search())
         self.pushButtonSearch.setGeometry(QtCore.QRect(270, 80, 111, 31))
         self.pushButtonSearch.setObjectName("pushButtonSearch")
 
@@ -314,7 +314,7 @@ class Ui_YoutubeDownloader(object):
         self.pushButtonConfirm = QtWidgets.QPushButton(self.centralwidget)
         self.pushButtonConfirm.setGeometry(QtCore.QRect(390, 230, 141, 21))
         self.pushButtonConfirm.setObjectName("pushButtonConfirm")
-        self.pushButtonDefault = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButtonDefault = QtWidgets.QPushButton(self.centralwidget, clicked = lambda: self.default())
         self.pushButtonDefault.setGeometry(QtCore.QRect(530, 230, 151, 21))
         self.pushButtonDefault.setObjectName("pushButtonDefault")
         self.checkBoxThumbnail = QtWidgets.QCheckBox(self.centralwidget)
@@ -355,6 +355,24 @@ class Ui_YoutubeDownloader(object):
         self.pushButtonDefault.setText(_translate("YoutubeDownloader", "Default"))
         self.checkBoxThumbnail.setText(_translate("YoutubeDownloader", "Download Thumbnail Aswell"))
         self.checkBoxPlaylist.setText(_translate("YoutubeDownloader", "Check for Playlist / Uncheck for Video"))
+
+    def Search(self):
+        url = self.textEditName.toPlainText()
+
+        if self.checkBoxPlaylist.isChecked():
+            try:
+                playlist = Playlist(url)
+            except RegexMatchError:
+                self.textEditPlaylistSelected.setText("No Playlist Found")
+            else:
+                self.textEditPlaylistSelected.setText(f"Playlist: {playlist.title}")
+        else:
+            try:
+                yt = YouTube(url)
+            except RegexMatchError:
+                self.textEditVideoSelected.setText("No Video Found")
+            else:
+                self.textEditVideoSelected.setText(f"Video: {yt.title}")
 
 
     def Convert(self):
