@@ -62,16 +62,13 @@ class Downloader(QThread):
                     self.status.emit(f"Downloading: {yt.title}") # status update
 
                     download_file = yt.streams.filter(only_audio=True).first().download(output_path=self.save_to) # specficially download audio
-                    base, _ = os.path.splitext(download_file) # contains only the base for download file
+                    base, extension = os.path.splitext(download_file) # contains only the base for download file
+
+                    if self.author_flag: # checking to add the author to filename
+                        download_file = self.include_author(base,yt, extension, download_file)
 
                     if self.thumbnail_flag: # if the thumbnail box is checked.
                         self.download_thumbnail(yt,base) # passing the youtube url and file
-
-                    if self.author_flag: # checking to add the author to filename
-                        !extension = _
-                        new_download_file = f"{_} (From: {yt.author}{_})"
-                        os.replace(download_file, new_download_file)
-                        download_file = new_download_file # update the current intereptation of file
 
                     progress = int((i + 1) / total_videos * 100) # for each item in playlist divide that + 1 with the total videos x 100 to get percentage.
                     self.progress.emit(progress) # emit the progress to progress bar.
@@ -100,7 +97,7 @@ class Downloader(QThread):
                     self.status.emit(f"Downloading: {yt.title}")
 
                     download_file = yt.streams.filter(only_video=True).first().download(output_path=self.save_to)
-                    base, _ = os.path.splitext(download_file)
+                    base, extension = os.path.splitext(download_file)
 
                     if self.thumbnail_flag:
                         self.download_thumbnail(yt,base)
@@ -124,7 +121,7 @@ class Downloader(QThread):
             yt = YouTube(self.url)
             self.status.emit(f"downloading {yt.title}")
             download_file = yt.streams.filter(only_audio=True).first().download(output_path=self.save_to)
-            base, _ = os.path.splitext(download_file)
+            base, extension = os.path.splitext(download_file)
 
             if self.thumbnail_flag:
                 self.download_thumbnail(yt,base)
@@ -140,7 +137,7 @@ class Downloader(QThread):
             yt = YouTube(self.url)
             self.status.emit(f"downloading {yt.title}")
             download_file = yt.streams.filter(only_video=True).first().download(output_path=self.save_to)
-            base, _ = os.path.splitext(download_file)
+            base, extension = os.path.splitext(download_file)
 
             if self.thumbnail_flag:
                 self.download_thumbnail(yt,base)
@@ -166,7 +163,7 @@ class Downloader(QThread):
                     self.status.emit(f"Downloading: {yt.title}")
 
                     download_file = yt.streams.first().download(output_path=self.save_to)
-                    base, _ = os.path.splitext(download_file)
+                    base, extension = os.path.splitext(download_file)
 
                     if self.thumbnail_flag:
                         self.download_thumbnail(yt,base)
@@ -189,7 +186,7 @@ class Downloader(QThread):
             yt = YouTube(self.url)
             self.status.emit(f"downloading {yt.title}")
             download_file = yt.streams.first().download(output_path=self.save_to)
-            base, _ = os.path.splitext(download_file)
+            base, extension = os.path.splitext(download_file)
 
             if self.thumbnail_flag:
                 self.download_thumbnail(yt,base)
@@ -201,6 +198,18 @@ class Downloader(QThread):
             self.status.emit(f"Error Downloading {self.url}: {str(e)}")
 
     """Extra"""
+    def include_author(self,base,yt,extension, download_file):
+        directory = os.path.dirname(download_file) # updates directory
+        new_filename = f"{base} (From - {yt.author}){extension}"
+        new_download_file = os.path.join(directory, new_filename)
+
+        try:
+            os.rename(download_file, new_download_file)
+            download_file = new_download_file # update the current value of file
+            self.status.emit(f"Renamed file to include Author: {os.path.basename(new_download_file)}") # emits to list
+        except Exception as rename_error:
+            self.status.emit(f"Error renaming file: {str(rename_error)}") # emits to download list
+
     def download_thumbnail(self,yt,base): # given the youtube url, pass the thumbnail url request and convert it to .jpg
         try:
             thumbnail_url = yt.thumbnail_url
@@ -472,7 +481,7 @@ class Ui_YoutubeDownloader(object):
         # create and starting the download worker:
         self.downloader = Downloader(link, save_to, download_type, thumbnail_flag, author_flag)
         self.downloader.progress.connect(self.update_progress)
-        self.downloader.error.connect(self.update_status)
+        self.downloader.status.connect(self.update_status)
         self.downloader.error.connect(self.handle_error)
         self.downloader.finished.connect(self.download_finished)
 
