@@ -99,6 +99,9 @@ class Downloader(QThread):
                     download_file = yt.streams.filter(only_video=True).first().download(output_path=self.save_to)
                     base, extension = os.path.splitext(download_file)
 
+                    if self.author_flag: # checking to add the author to filename
+                        download_file = self.include_author(base,yt, extension, download_file)
+
                     if self.thumbnail_flag:
                         self.download_thumbnail(yt,base)
 
@@ -123,6 +126,9 @@ class Downloader(QThread):
             download_file = yt.streams.filter(only_audio=True).first().download(output_path=self.save_to)
             base, extension = os.path.splitext(download_file)
 
+            if self.author_flag: # checking to add the author to filename
+                download_file = self.include_author(base,yt, extension, download_file)
+
             if self.thumbnail_flag:
                 self.download_thumbnail(yt,base)
             
@@ -138,6 +144,9 @@ class Downloader(QThread):
             self.status.emit(f"downloading {yt.title}")
             download_file = yt.streams.filter(only_video=True).first().download(output_path=self.save_to)
             base, extension = os.path.splitext(download_file)
+
+            if self.author_flag: # checking to add the author to filename
+                download_file = self.include_author(base,yt, extension, download_file)
 
             if self.thumbnail_flag:
                 self.download_thumbnail(yt,base)
@@ -165,6 +174,9 @@ class Downloader(QThread):
                     download_file = yt.streams.first().download(output_path=self.save_to)
                     base, extension = os.path.splitext(download_file)
 
+                    if self.author_flag: # checking to add the author to filename
+                        download_file = self.include_author(base,yt, extension, download_file)
+
                     if self.thumbnail_flag:
                         self.download_thumbnail(yt,base)
 
@@ -188,6 +200,9 @@ class Downloader(QThread):
             download_file = yt.streams.first().download(output_path=self.save_to)
             base, extension = os.path.splitext(download_file)
 
+            if self.author_flag: # checking to add the author to filename
+                download_file = self.include_author(base,yt, extension, download_file)
+
             if self.thumbnail_flag:
                 self.download_thumbnail(yt,base)
             
@@ -197,7 +212,7 @@ class Downloader(QThread):
         except Exception as e:
             self.status.emit(f"Error Downloading {self.url}: {str(e)}")
 
-    """Extra"""
+    """Includes the author"""
     def include_author(self,base,yt,extension, download_file):
         directory = os.path.dirname(download_file) # updates directory
         new_filename = f"{base} (From - {yt.author}){extension}"
@@ -210,6 +225,7 @@ class Downloader(QThread):
         except Exception as rename_error:
             self.status.emit(f"Error renaming file: {str(rename_error)}") # emits to download list
 
+    """Downloads thumbnail as well as normal download"""
     def download_thumbnail(self,yt,base): # given the youtube url, pass the thumbnail url request and convert it to .jpg
         try:
             thumbnail_url = yt.thumbnail_url
@@ -236,12 +252,8 @@ class Ui_YoutubeDownloader(object):
         self.pushButtonConvert.setObjectName("pushButtonConvert")
         # List of downloaded items
         self.listDownloaded = QtWidgets.QListWidget(self.centralwidget)
-        self.listDownloaded.setGeometry(QtCore.QRect(20, 130, 361, 191))
+        self.listDownloaded.setGeometry(QtCore.QRect(20, 110, 361, 211))
         self.listDownloaded.setObjectName("listDownloaded")
-        # Delete selected video button
-        self.pushButtonDelete = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButtonDelete.setGeometry(QtCore.QRect(20, 110, 361, 21))
-        self.pushButtonDelete.setObjectName("pushButtonDelete")
         # Where user enters link to retrieve download data
         self.textEditLink = QtWidgets.QTextEdit(self.centralwidget)
         self.textEditLink.setGeometry(QtCore.QRect(20, 40, 251, 31))
@@ -282,7 +294,7 @@ class Ui_YoutubeDownloader(object):
         self.labelFormat.setObjectName("labelFormat")
         # Label for where the user inputs link
         self.labelLink = QtWidgets.QLabel(self.centralwidget)
-        self.labelLink.setGeometry(QtCore.QRect(20, 10, 121, 31))
+        self.labelLink.setGeometry(QtCore.QRect(20, 10, 131, 31))
         font = QtGui.QFont()
         font.setPointSize(11)
         font.setBold(True)
@@ -390,17 +402,16 @@ class Ui_YoutubeDownloader(object):
         _translate = QtCore.QCoreApplication.translate
         YoutubeDownloader.setWindowTitle(_translate("YoutubeDownloader", "YoutubeDownloader"))
         self.pushButtonConvert.setText(_translate("YoutubeDownloader", "Convert"))
-        self.pushButtonDelete.setText(_translate("YoutubeDownloader", "Delete Selected Download"))
         self.radioButtonVideo.setText(_translate("YoutubeDownloader", "Video only"))
         self.radioButtonAudio.setText(_translate("YoutubeDownloader", "Audio only"))
         self.radioButtonVideoAndAudio.setText(_translate("YoutubeDownloader", "Video + Audio"))
         self.labelFormat.setText(_translate("YoutubeDownloader", "Format Settings"))
-        self.labelLink.setText(_translate("YoutubeDownloader", "Input Link Here:"))
+        self.labelLink.setText(_translate("YoutubeDownloader", "Input Links Here:"))
         self.labelExtra.setText(_translate("YoutubeDownloader", "Extra Settings"))
         self.labelDirectDownloads.setText(_translate("YoutubeDownloader", "Optional Download Directory"))
         self.pushButtonSearch.setText(_translate("YoutubeDownloader", "Search"))
-        self.labelPlaylistSelected.setText(_translate("YoutubeDownloader", "Playlist Selected:"))
-        self.labelVideoSelected.setText(_translate("YoutubeDownloader", "Video Selected:"))
+        self.labelPlaylistSelected.setText(_translate("YoutubeDownloader", "Playlist Searched:"))
+        self.labelVideoSelected.setText(_translate("YoutubeDownloader", "Video Searched:"))
         self.pushButtonDefault.setText(_translate("YoutubeDownloader", "Set back to Default"))
         self.checkBoxThumbnail.setText(_translate("YoutubeDownloader", "Download Thumbnail Aswell"))
         self.checkBoxPlaylist.setText(_translate("YoutubeDownloader", "Check for Playlist / Uncheck for Video"))
@@ -408,7 +419,11 @@ class Ui_YoutubeDownloader(object):
 
     """Searches for youtube video or playlist."""
     def Search(self):
-        url = self.textEditName.toPlainText() # assigns the url to the plain text.
+        # Reset the text.
+        self.textEditVideoSelected.setText("")
+        self.textEditPlaylistSelected.setText("")
+        # assigns the url to the plain text.
+        url = self.textEditName.toPlainText()
 
         if self.checkBoxPlaylist.isChecked(): # If the playlist box is checked, it will set the title of the playlist to the textedit.
             try:
@@ -427,6 +442,7 @@ class Ui_YoutubeDownloader(object):
 
     """Converting the youtube playlist or video"""
     def Convert(self): 
+        self.listDownloaded.clear()
         self.progressBar.setValue(0) # reset the progressbar 
         self.statusbar.showMessage("") # Reset the status bar.
         """Start the download process"""
