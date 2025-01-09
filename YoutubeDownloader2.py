@@ -15,13 +15,13 @@ class Downloader(QThread):
     error = pyqtSignal(str)
 
     # Properties for Downloads
-    def __init__(self,url,save_to,download_type, thumbnail_flag, "author_flag"):
+    def __init__(self,url,save_to,download_type, thumbnail_flag, author_flag):
         super().__init__()
         self.url = url
         self.save_to = save_to
         self.download_type = download_type
         self.thumbnail_flag = thumbnail_flag
-        "self.author_flag = author_flag
+        self.author_flag = author_flag
         self.is_running = True
 
     # Determining what download type to run.
@@ -66,6 +66,12 @@ class Downloader(QThread):
 
                     if self.thumbnail_flag: # if the thumbnail box is checked.
                         self.download_thumbnail(yt,base) # passing the youtube url and file
+
+                    if self.author_flag: # checking to add the author to filename
+                        !extension = _
+                        new_download_file = f"{_} (From: {yt.author}{_})"
+                        os.replace(download_file, new_download_file)
+                        download_file = new_download_file # update the current intereptation of file
 
                     progress = int((i + 1) / total_videos * 100) # for each item in playlist divide that + 1 with the total videos x 100 to get percentage.
                     self.progress.emit(progress) # emit the progress to progress bar.
@@ -423,6 +429,7 @@ class Ui_YoutubeDownloader(object):
 
         # Variables for if the user wants the thumbnail, where to save to or the actual link.
         thumbnail_flag = self.checkBoxThumbnail.isChecked()
+        author_flag = self.checkBoxAuthor.isChecked()
         link = self.textEditLink.toPlainText()
         save_to = self.textEditDirectDownloads.toPlainText()
 
@@ -463,7 +470,7 @@ class Ui_YoutubeDownloader(object):
             download_type = "video_audio_single"
         
         # create and starting the download worker:
-        self.downloader = Downloader(link, save_to, download_type, thumbnail_flag)
+        self.downloader = Downloader(link, save_to, download_type, thumbnail_flag, author_flag)
         self.downloader.progress.connect(self.update_progress)
         self.downloader.error.connect(self.update_status)
         self.downloader.error.connect(self.handle_error)
